@@ -1,0 +1,45 @@
+services:
+
+  # =================================================== #
+  #  Forge Server                                      #
+  # =================================================== #
+  forge:
+    container_name: mc_forge
+    image: itzg/minecraft-server:java17
+    tty: true
+    stdin_open: true
+    environment:
+      ENABLE_ROLLING_LOGS: "TRUE"
+      MEMORY: "3500M"
+      JVM_OPTS: "-XX:MaxRAMPercentage=75"
+      TYPE: "FORGE"
+      EULA: "TRUE"
+      VERSION: "1.20.1" # a default is "LATEST"
+      FORGEVERSION: "47.3.0"
+      MOTD: "The World of Forge Server"
+      MAX_PLAYERS: 5
+      MAX_WORLD_SIZE: 5000
+      ENABLE_COMMAND_BLOCK: "TRUE"
+      SNOOPER_ENABLED: "FALSE"
+      VIEW_DISTANCE: 8
+      SIMULATION_DISTANCE: 8
+      SYNC_CHUNK_WRITES: "FALSE"
+      PVP: "TRUE"
+      DIFFICULTY: "easy"
+      LEVEL: "world" # a default is "world"
+      #ONLINE_MODE: "TRUE"
+      ALLOW_FLIGHT: "TRUE"
+      USE_NATIVE_TRANSPORT: "TRUE"
+      STOP_SERVER_ANNOUNCE_DELAY: 60
+      GUI: "FALSE"
+      WHITELIST: ""
+      OPS: ""
+      MODS: |
+      SERVER_PORT: "25565"
+    ports:
+      - "25565:25565/tcp"
+      - "25565:25565/udp"
+    volumes:
+      - ./1.20.1mns:/data
+      - /etc/timezone:/etc/timezone:ro
+    restart: unless-stopped
