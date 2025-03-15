@@ -182,7 +182,7 @@ local function process_image(path, target_width, target_height, monitor)
     get_pixel = function(x, y) return image:get_pixel(x, y) end
   end
   local temp_palette = compute_optimal_palette(image, width, height, get_pixel)
-  local pallete = set_palette(temp_palette, monitor)
+  local palette = set_palette(temp_palette, monitor)
   return convertcc(image, width, height, get_pixel, palette)
 end
 
