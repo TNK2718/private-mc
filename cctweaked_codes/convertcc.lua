@@ -1,34 +1,6 @@
 local png = require "png"
 
-local base_palette = {
-  {240,240,240}, {242,178,51}, {229,127,216}, {153,178,242},
-  {222,222,108}, {127,204,25}, {242,178,204}, {76,76,76},
-  {153,153,153}, {76,153,178}, {178,102,229}, {37,49,146},
-  {127,102,76}, {87,166,78}, {204,76,76}, {25,25,25}
-}
-
-local color_to_char = {
-  ["240,240,240"] = "0",
-  ["242,178,51"]   = "1",
-  ["229,127,216"]  = "2",
-  ["153,178,242"]  = "3",
-  ["222,222,108"]  = "4",
-  ["127,204,25"]   = "5",
-  ["242,178,204"]  = "6",
-  ["76,76,76"]     = "7",
-  ["153,153,153"]  = "8",
-  ["76,153,178"]   = "9",
-  ["178,102,229"]  = "a",
-  ["37,49,146"]    = "b",
-  ["127,102,76"]   = "c",
-  ["87,166,78"]    = "d",
-  ["204,76,76"]    = "e",
-  ["25,25,25"]     = "f"
-}
-
-local function color_key(color)
-  return string.format("%d,%d,%d", color[1], color[2], color[3])
-end
+local index_to_char = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"}
 
 local function normalize_pixel(pixel)
   local r, g, b = pixel.r, pixel.g, pixel.b
@@ -39,57 +11,6 @@ local function normalize_pixel(pixel)
   end
   return r, g, b
 end
-
-local function find_nearest_color(r, g, b)
-  local best_color, best_dist = nil, math.huge
-  for _, pal in ipairs(base_palette) do
-    local dr = r - pal[1]
-    local dg = g - pal[2]
-    local db = b - pal[3]
-    local dist = dr * dr + dg * dg + db * db
-    if dist < best_dist then
-      best_dist = dist
-      best_color = pal
-    end
-  end
-  return best_color
-end
-
-local function convertcc(image, width, height, get_pixel)
-  local text_representation = ""
-  for y = 1, height do
-    for x = 1, width do
-      local pixel = get_pixel(x, y)
-      local r, g, b = normalize_pixel(pixel)
-      local nearest = find_nearest_color(r, g, b)
-      local key = color_key(nearest)
-      local char = color_to_char[key] or "?"
-      text_representation = text_representation .. char
-    end
-    text_representation = text_representation .. "\n"
-  end
-  return text_representation
-end
-
--- nearest neighbor interpolation
-
-local function get_resized_pixel_getter(image, target_width, target_height)
-  local src_width = image.width
-  local src_height = image.height
-  return function(x, y)
-    local src_x = math.floor((x - 0.5) * src_width / target_width + 0.5)
-    local src_y = math.floor((y - 0.5) * src_height / target_height + 0.5)
-    if src_x < 1 then src_x = 1 end
-    if src_x > src_width then src_x = src_width end
-    if src_y < 1 then src_y = 1 end
-    if src_y > src_height then src_y = src_height end
-    return image:get_pixel(src_x, src_y)
-  end
-end
-
---
-
--- bicubic interpolation
 
 local function clamp(x, lower, upper)
   return math.max(lower, math.min(upper, x))
@@ -126,8 +47,7 @@ local function getBicubicPixel(image, x, y)
   local r = getChannel("r")
   local g = getChannel("g")
   local b = getChannel("b")
-  local a = 1
-  return {r = r, g = g, b = b, a = a}
+  return {r = r, g = g, b = b, a = 1}
 end
 
 local function get_resized_pixel_getter_bicubic(image, target_width, target_height)
@@ -140,23 +60,130 @@ local function get_resized_pixel_getter_bicubic(image, target_width, target_heig
   end
 end
 
---
+local function find_nearest_color_in_palette(r, g, b, palette)
+  local best_index, best_dist = nil, math.huge
+  for i, pal in ipairs(palette) do
+    local dr = r - pal.r
+    local dg = g - pal.g
+    local db = b - pal.b
+    local dist = dr * dr + dg * dg + db * db
+    if dist < best_dist then
+      best_dist = dist
+      best_index = i
+    end
+  end
+  return best_index
+end
 
-local function process_image(path, target_width, target_height)
+local function convertcc(image, width, height, get_pixel, palette)
+  local text_representation = ""
+  for y = 1, height do
+    for x = 1, width do
+      local pixel = get_pixel(x, y)
+      local r, g, b = normalize_pixel(pixel)
+      local nearest_index = find_nearest_color_in_palette(r, g, b, palette)
+      local char = index_to_char[nearest_index] or "?"
+      text_representation = text_representation .. char
+    end
+    text_representation = text_representation .. "\n"
+  end
+  return text_representation
+end
+
+local function kmeans(samples, K, max_iter)
+  local centroids = {}
+  local assignments = {}
+  local n = #samples
+  for i = 1, K do
+    local idx = math.random(n)
+    centroids[i] = {r = samples[idx].r, g = samples[idx].g, b = samples[idx].b}
+  end
+  for iter = 1, max_iter do
+    for i, sample in ipairs(samples) do
+      local best_idx, best_dist = nil, math.huge
+      for j, centroid in ipairs(centroids) do
+        local dr = sample.r - centroid.r
+        local dg = sample.g - centroid.g
+        local db = sample.b - centroid.b
+        local d = dr * dr + dg * dg + db * db
+        if d < best_dist then
+          best_dist = d
+          best_idx = j
+        end
+      end
+      assignments[i] = best_idx
+    end
+    local new_centroids = {}
+    local counts = {}
+    for i = 1, K do
+      new_centroids[i] = {r = 0, g = 0, b = 0}
+      counts[i] = 0
+    end
+    for i, sample in ipairs(samples) do
+      local idx = assignments[i]
+      new_centroids[idx].r = new_centroids[idx].r + sample.r
+      new_centroids[idx].g = new_centroids[idx].g + sample.g
+      new_centroids[idx].b = new_centroids[idx].b + sample.b
+      counts[idx] = counts[idx] + 1
+    end
+    local changed = false
+    for i = 1, K do
+      if counts[i] > 0 then
+        local nr = new_centroids[i].r / counts[i]
+        local ng = new_centroids[i].g / counts[i]
+        local nb = new_centroids[i].b / counts[i]
+        if nr ~= centroids[i].r or ng ~= centroids[i].g or nb ~= centroids[i].b then
+          changed = true
+        end
+        centroids[i] = {r = nr, g = ng, b = nb}
+      end
+    end
+    if not changed then break end
+  end
+  return centroids
+end
+
+local function compute_optimal_palette(image, width, height, get_pixel)
+  local samples = {}
+  for y = 1, height do
+    for x = 1, width do
+      local pixel = get_pixel(x, y)
+      samples[#samples + 1] = {r = pixel.r, g = pixel.g, b = pixel.b}
+    end
+  end
+  local K = 16
+  local max_iter = 10
+  local palette = kmeans(samples, K, max_iter)
+  return palette
+end
+
+local function set_palette(palette, monitor)
+  local new_palette = {}
+  for i, centroid in ipairs(palette) do
+    monitor.setPaletteColor(i, centroid.r, centroid.g, centroid.b)
+    nr = math.floor(centroid.r * 255 + 0.5)
+    ng = math.floor(centroid.g * 255 + 0.5)
+    nb = math.floor(centroid.b * 255 + 0.5)
+    new_palette[i] = {r = nr, g = ng, b = nb}
+  end
+  return new_palette
+end
+
+local function process_image(path, target_width, target_height, monitor)
   local image = png(path)
   local get_pixel, width, height
   if target_width and target_height then
     width = target_width
     height = target_height
-    -- get_pixel = get_resized_pixel_getter(image, target_width, target_height)
     get_pixel = get_resized_pixel_getter_bicubic(image, target_width, target_height)
-
   else
     width = image.width
     height = image.height
     get_pixel = function(x, y) return image:get_pixel(x, y) end
   end
-  return convertcc(image, width, height, get_pixel)
+  local palette = compute_optimal_palette(image, width, height, get_pixel)
+  set_palette(palette, monitor)
+  return convertcc(image, width, height, get_pixel, palette)
 end
 
 return {
