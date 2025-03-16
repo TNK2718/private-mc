@@ -43,7 +43,7 @@ function drawPx(x, y, color, mon)
 
   -- Convert image to text
   local width, height = mon.getSize()
-  local imageText = convertcc.process_image(temp_filename, width, height, mon)
+  local imageText = convertcc.process_image(temp_filename, width, height, monitorSide)
   
   -- Draw image on monitor
   local hex_table = {["0"] = 1, ["1"] = 2, ["2"] = 4, ["3"] = 8, ["4"] = 16, ["5"] = 32, ["6"] = 64, ["7"] = 128, ["8"] = 256, ["9"] = 512, ["a"] = 1024, ["b"] = 2048, ["c"] = 4096, ["d"] = 8192, ["e"] = 16384, ["f"] = 32768}

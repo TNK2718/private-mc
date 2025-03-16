@@ -157,7 +157,8 @@ local function compute_optimal_palette(image, width, height, get_pixel)
   return palette
 end
 
-local function set_palette(palette, monitor)
+local function set_palette(palette, monitorSide)
+  local monitor = peripheral.wrap(monitorSide)
   local new_palette = {}
   for i, centroid in ipairs(palette) do
     monitor.setPaletteColor(2^(i - 1), centroid.r, centroid.g, centroid.b)
@@ -169,7 +170,7 @@ local function set_palette(palette, monitor)
   return new_palette
 end
 
-local function process_image(path, target_width, target_height, monitor)
+local function process_image(path, target_width, target_height, monitorSide)
   local image = png(path)
   sleep(0) -- Yield to allow other tasks to run
   local get_pixel, width, height
@@ -185,7 +186,7 @@ local function process_image(path, target_width, target_height, monitor)
   sleep(0)
   local temp_palette = compute_optimal_palette(image, width, height, get_pixel)
   sleep(0)
-  local palette = set_palette(temp_palette, monitor)
+  local palette = set_palette(temp_palette, monitorSide)
   return convertcc(image, width, height, get_pixel, palette)
 end
 
