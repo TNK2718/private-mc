@@ -75,98 +75,184 @@ local function find_nearest_color_in_palette(r, g, b, palette)
   return best_index
 end
 
-local function convertcc(image, width, height, get_pixel, palette)
+------------------------------------------------------------
+-- Octree-based color quantization implementation
+------------------------------------------------------------
+local Octree = {}
+Octree.__index = Octree
+
+function Octree.new(maxDepth, maxColors)
+  local self = setmetatable({}, Octree)
+  self.maxDepth = maxDepth or 8
+  self.maxColors = maxColors or 16
+  self.root = { sum_r = 0, sum_g = 0, sum_b = 0, pixel_count = 0, children = {}, level = 0 }
+  self.leaves = {}    -- Final leaves (palette candidates)
+  self.levels = {}    -- Node list for each level
+  for i = 0, self.maxDepth do
+    self.levels[i] = {}
+  end
+  table.insert(self.levels[0], self.root)
+  return self
+end
+
+function Octree:insertColor(r, g, b)
+  local function insertNode(node, r, g, b, level, octree)
+    node.sum_r = node.sum_r + r
+    node.sum_g = node.sum_g + g
+    node.sum_b = node.sum_b + b
+    node.pixel_count = node.pixel_count + 1
+    if level == octree.maxDepth then
+      if not node.isLeaf then
+        node.isLeaf = true
+        table.insert(octree.leaves, node)
+      end
+    else
+      local shift = 8 - level
+      local bit_r = math.floor(r / 2^(shift)) % 2
+      local bit_g = math.floor(g / 2^(shift)) % 2
+      local bit_b = math.floor(b / 2^(shift)) % 2
+      local index = bit_r * 4 + bit_g * 2 + bit_b + 1
+      if not node.children then node.children = {} end
+      if not node.children[index] then
+        node.children[index] = { sum_r = 0, sum_g = 0, sum_b = 0, pixel_count = 0, children = {}, level = level, isLeaf = false }
+        table.insert(octree.levels[level], node.children[index])
+      end
+      insertNode(node.children[index], r, g, b, level + 1, octree)
+    end
+  end
+  insertNode(self.root, r, g, b, 1, self)
+end
+
+-- When the number of leaves exceeds maxColors, merge lower-level nodes to reduce the number of leaves
+function Octree:reduce()
+  for level = self.maxDepth - 1, 0, -1 do
+    local nodes = self.levels[level]
+    if nodes then
+      for _, node in ipairs(nodes) do
+        if node.children then
+          local leafChildren = {}
+          for _, child in ipairs(node.children) do
+            if child and child.isLeaf then
+              table.insert(leafChildren, child)
+            end
+          end
+          if #leafChildren > 0 then
+            for _, child in ipairs(leafChildren) do
+              node.sum_r = node.sum_r + child.sum_r
+              node.sum_g = node.sum_g + child.sum_g
+              node.sum_b = node.sum_b + child.sum_b
+              node.pixel_count = node.pixel_count + child.pixel_count
+              for i, leaf in ipairs(self.leaves) do
+                if leaf == child then
+                  table.remove(self.leaves, i)
+                  break
+                end
+              end
+            end
+            node.children = nil
+            if not node.isLeaf then
+              node.isLeaf = true
+              table.insert(self.leaves, node)
+            end
+            if #self.leaves <= self.maxColors then
+              return
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+function Octree:getPalette()
+  local palette = {}
+  for _, leaf in ipairs(self.leaves) do
+    local avg_r = leaf.sum_r / leaf.pixel_count
+    local avg_g = leaf.sum_g / leaf.pixel_count
+    local avg_b = leaf.sum_b / leaf.pixel_count
+    table.insert(palette, { r = avg_r, g = avg_g, b = avg_b })
+  end
+  return palette
+end
+
+-- Find the nearest leaf (palette entry) in the Octree for the given color and return its index
+function Octree:getColorIndex(r, g, b)
+  local node = self.root
+  for level = 1, self.maxDepth do
+    if node.isLeaf or not node.children then
+      break
+    end
+    local shift = 8 - level
+    local bit_r = math.floor(r / 2^(shift)) % 2
+    local bit_g = math.floor(g / 2^(shift)) % 2
+    local bit_b = math.floor(b / 2^(shift)) % 2
+    local index = bit_r * 4 + bit_g * 2 + bit_b + 1
+    if node.children[index] then
+      node = node.children[index]
+    else
+      break
+    end
+  end
+  for i, leaf in ipairs(self.leaves) do
+    if leaf == node then
+      return i
+    end
+  end
+  return 1
+end
+
+------------------------------------------------------------
+-- Use Octree for the compute_optimal_palette implementation
+------------------------------------------------------------
+local function compute_optimal_palette(image, width, height, get_pixel)
+  local octree = Octree.new(8, 16)
+  for y = 1, height do
+    for x = 1, width do
+      local pixel = get_pixel(x, y)
+      local r, g, b = pixel.r, pixel.g, pixel.b
+      if r <= 1 and g <= 1 and b <= 1 then
+        r = math.floor(r * 255 + 0.5)
+        g = math.floor(g * 255 + 0.5)
+        b = math.floor(b * 255 + 0.5)
+      end
+      octree:insertColor(r, g, b)
+    end
+  end
+  while #octree.leaves > 16 do
+    octree:reduce()
+  end
+  local palette = octree:getPalette()
+  return palette, octree
+end
+
+local function set_palette(palette, monitor)
+  local new_palette = {}
+  for i, centroid in ipairs(palette) do
+    -- monitor.setPaletteColor expects values in the range 0 to 1, so convert them
+    monitor.setPaletteColor(2^(i - 1), centroid.r / 255, centroid.g / 255, centroid.b / 255)
+    new_palette[i] = {r = centroid.r, g = centroid.g, b = centroid.b}
+  end
+  return new_palette
+end
+
+local function convertcc(image, width, height, get_pixel, palette, octree)
   local text_representation = ""
   for y = 1, height do
     for x = 1, width do
       local pixel = get_pixel(x, y)
       local r, g, b = normalize_pixel(pixel)
-      local nearest_index = find_nearest_color_in_palette(r, g, b, palette)
+      local nearest_index
+      if octree then
+        nearest_index = octree:getColorIndex(r, g, b)
+      else
+        nearest_index = find_nearest_color_in_palette(r, g, b, palette)
+      end
       local char = index_to_char[nearest_index] or "?"
       text_representation = text_representation .. char
     end
     text_representation = text_representation .. "\n"
   end
   return text_representation
-end
-
-local function kmeans(samples, K, max_iter)
-  local centroids = {}
-  local assignments = {}
-  local n = #samples
-  for i = 1, K do
-    local idx = math.random(n)
-    centroids[i] = {r = samples[idx].r, g = samples[idx].g, b = samples[idx].b}
-  end
-  for iter = 1, max_iter do
-    for i, sample in ipairs(samples) do
-      local best_idx, best_dist = nil, math.huge
-      for j, centroid in ipairs(centroids) do
-        local dr = sample.r - centroid.r
-        local dg = sample.g - centroid.g
-        local db = sample.b - centroid.b
-        local d = dr * dr + dg * dg + db * db
-        if d < best_dist then
-          best_dist = d
-          best_idx = j
-        end
-      end
-      assignments[i] = best_idx
-    end
-    local new_centroids = {}
-    local counts = {}
-    for i = 1, K do
-      new_centroids[i] = {r = 0, g = 0, b = 0}
-      counts[i] = 0
-    end
-    for i, sample in ipairs(samples) do
-      local idx = assignments[i]
-      new_centroids[idx].r = new_centroids[idx].r + sample.r
-      new_centroids[idx].g = new_centroids[idx].g + sample.g
-      new_centroids[idx].b = new_centroids[idx].b + sample.b
-      counts[idx] = counts[idx] + 1
-    end
-    local changed = false
-    for i = 1, K do
-      if counts[i] > 0 then
-        local nr = new_centroids[i].r / counts[i]
-        local ng = new_centroids[i].g / counts[i]
-        local nb = new_centroids[i].b / counts[i]
-        if nr ~= centroids[i].r or ng ~= centroids[i].g or nb ~= centroids[i].b then
-          changed = true
-        end
-        centroids[i] = {r = nr, g = ng, b = nb}
-      end
-    end
-    if not changed then break end
-  end
-  return centroids
-end
-
-local function compute_optimal_palette(image, width, height, get_pixel)
-  local samples = {}
-  for y = 1, height do
-    for x = 1, width do
-      local pixel = get_pixel(x, y)
-      samples[#samples + 1] = {r = pixel.r, g = pixel.g, b = pixel.b}
-    end
-  end
-  local K = 16
-  local max_iter = 100
-  local palette = kmeans(samples, K, max_iter)
-  return palette
-end
-
-local function set_palette(palette, monitor)
-  local new_palette = {}
-  for i, centroid in ipairs(palette) do
-    monitor.setPaletteColor(2^(i - 1), centroid.r, centroid.g, centroid.b)
-    nr = math.floor(centroid.r * 255 + 0.5)
-    ng = math.floor(centroid.g * 255 + 0.5)
-    nb = math.floor(centroid.b * 255 + 0.5)
-    new_palette[i] = {r = nr, g = ng, b = nb}
-  end
-  return new_palette
 end
 
 local function process_image(path, target_width, target_height, monitor)
@@ -181,9 +267,9 @@ local function process_image(path, target_width, target_height, monitor)
     height = image.height
     get_pixel = function(x, y) return image:get_pixel(x, y) end
   end
-  local temp_palette = compute_optimal_palette(image, width, height, get_pixel)
+  local temp_palette, octree = compute_optimal_palette(image, width, height, get_pixel)
   local palette = set_palette(temp_palette, monitor)
-  return convertcc(image, width, height, get_pixel, palette)
+  return convertcc(image, width, height, get_pixel, palette, octree)
 end
 
 return {
