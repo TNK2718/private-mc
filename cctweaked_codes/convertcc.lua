@@ -257,6 +257,7 @@ end
 
 local function process_image(path, target_width, target_height, monitor)
   local image = png(path)
+  sleep(0)  -- Yield to allow other tasks to runs
   local get_pixel, width, height
   if target_width and target_height then
     width = target_width
@@ -268,6 +269,7 @@ local function process_image(path, target_width, target_height, monitor)
     get_pixel = function(x, y) return image:get_pixel(x, y) end
   end
   local temp_palette, octree = compute_optimal_palette(image, width, height, get_pixel)
+  sleep(0)
   local palette = set_palette(temp_palette, monitor)
   return convertcc(image, width, height, get_pixel, palette, octree)
 end
