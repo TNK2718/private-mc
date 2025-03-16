@@ -152,7 +152,7 @@ local function compute_optimal_palette(image, width, height, get_pixel)
     end
   end
   local K = 16
-  local max_iter = 10
+  local max_iter = 100
   local palette = kmeans(samples, K, max_iter)
   return palette
 end
@@ -160,7 +160,7 @@ end
 local function set_palette(palette, monitor)
   local new_palette = {}
   for i, centroid in ipairs(palette) do
-    monitor.setPaletteColor(i, centroid.r, centroid.g, centroid.b)
+    monitor.setPaletteColor(2^(i - 1), centroid.r, centroid.g, centroid.b)
     nr = math.floor(centroid.r * 255 + 0.5)
     ng = math.floor(centroid.g * 255 + 0.5)
     nb = math.floor(centroid.b * 255 + 0.5)
