@@ -21,6 +21,8 @@ THE SOFTWARE.
 (end license)
 --]]
 
+-- Added yieldings to work with computer craft mod
+
 local ipairs = ipairs
 local pairs = pairs
 local setmetatable = setmetatable
@@ -302,6 +304,7 @@ setmetatable(PngImage,{__call=function(methods,path,custom_stream,progCallback,d
     for i = 1, self.height do
         self.scanLines[i] = ScanLine(imStr,self.depth,self.colorType,plte,self.width,data_remap)
         if progCallback ~= nil then progCallback(i, self.height) end
+        sleep(0)
     end
 
     return setmetatable(self,{__index=methods})

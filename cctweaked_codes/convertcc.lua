@@ -139,6 +139,7 @@ local function kmeans(samples, K, max_iter)
       end
     end
     if not changed then break end
+    sleep(0)
   end
   return centroids
 end
