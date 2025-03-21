@@ -1,1 +1,1 @@
-dofile("display.lua")
+os.run({}, "/display.lua")
