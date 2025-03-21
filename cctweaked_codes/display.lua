@@ -10,7 +10,7 @@ print("Image Display v0.0.1")
 
 local url = ...
 if url == nil and not fs.exists("imageText.txt") then
-  print("Error: url is nil かつ保存された imageText がありません。")
+  print("Error: url is nil and imageText.txt does not exist.")
   return
 end
 
@@ -47,12 +47,12 @@ if url ~= nil then
   local width, height = mon.getSize()
   imageText = convertcc.process_image(temp_filename, width, height, monitorSide)
 
-  print("imageText を保存しています...")
+  print("Saving imageText...")
   local saveFile = fs.open(savedFilename, "w")
   saveFile.write(imageText)
   saveFile.close()
 else
-  print("保存された imageText が見つかりました。ファイルから読み込みます。")
+  print("Reading imageText from file...")
   local file = fs.open(savedFilename, "r")
   imageText = file.readAll()
   file.close()
