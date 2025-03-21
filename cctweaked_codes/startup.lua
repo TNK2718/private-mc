@@ -1,1 +1,1 @@
-os.run({}, "/display.lua")
+shell.run("display")
