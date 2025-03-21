@@ -187,7 +187,7 @@ local function process_image(path, target_width, target_height, monitorSide)
   sleep(0)
   local float_palette = compute_optimal_palette(image, width, height, get_pixel)
   sleep(0)
-  local palette = set_palette(temp_palette, monitorSide)
+  local palette = set_palette(float_palette, monitorSide)
   local imageText = convertcc(image, width, height, get_pixel, palette)
   return imageText, float_palette
 end
