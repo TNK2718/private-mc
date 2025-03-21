@@ -163,9 +163,9 @@ local function set_palette(palette, monitorSide)
   local new_palette = {}
   for i, centroid in ipairs(palette) do
     monitor.setPaletteColor(2^(i - 1), centroid.r, centroid.g, centroid.b)
-    nr = math.floor(centroid.r * 255 + 0.5)
-    ng = math.floor(centroid.g * 255 + 0.5)
-    nb = math.floor(centroid.b * 255 + 0.5)
+    local nr = math.floor(centroid.r * 255 + 0.5)
+    local ng = math.floor(centroid.g * 255 + 0.5)
+    local nb = math.floor(centroid.b * 255 + 0.5)
     new_palette[i] = {r = nr, g = ng, b = nb}
   end
   return new_palette
@@ -188,10 +188,12 @@ local function process_image(path, target_width, target_height, monitorSide)
   local temp_palette = compute_optimal_palette(image, width, height, get_pixel)
   sleep(0)
   local palette = set_palette(temp_palette, monitorSide)
-  return convertcc(image, width, height, get_pixel, palette)
+  local imageText = convertcc(image, width, height, get_pixel, palette)
+  return imageText, palette
 end
 
 return {
   process_image = process_image,
   convertcc = convertcc,
+  set_palette = set_palette,
 }

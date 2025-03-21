@@ -9,10 +9,10 @@ end
 print("Image Display v0.0.1")
 
 local url = ...
-if url == nil and not fs.exists("imageText.txt") then
-  print("Error: url is nil and imageText.txt does not exist.")
-  return
-end
+local savedImageFilename = "imageText.txt"
+local savedPaletteFilename = "palette.txt"
+local imageText = ""
+local palette = nil
 
 print("Detecting monitor...")
 local p_dirs = peripheral.getNames()
@@ -29,9 +29,6 @@ end
 local mon = peripheral.wrap(monitorSide)
 mon.setTextScale(0.5)
 
-local savedFilename = "imageText.txt"
-local imageText = ""
-
 if url ~= nil then
   print("Downloading image from " .. url .. "...")
   local response = http.get(url)
@@ -45,24 +42,34 @@ if url ~= nil then
   file.close()
 
   local width, height = mon.getSize()
-  imageText = convertcc.process_image(temp_filename, width, height, monitorSide)
+  imageText, palette = convertcc.process_image(temp_filename, width, height, monitorSide)
 
-  print("Saving imageText...")
-  local saveFile = fs.open(savedFilename, "w")
+  print("Saving imageText and palette...")
+  local saveFile = fs.open(savedImageFilename, "w")
   saveFile.write(imageText)
   saveFile.close()
+
+  local paletteFile = fs.open(savedPaletteFilename, "w")
+  paletteFile.write(textutils.serialize(palette))
+  paletteFile.close()
 else
-  print("Reading imageText from file...")
-  local file = fs.open(savedFilename, "r")
+  print("Reading imageText and palette from file...")
+  local file = fs.open(savedImageFilename, "r")
   imageText = file.readAll()
   file.close()
+  
+  local pFile = fs.open(savedPaletteFilename, "r")
+  palette = textutils.unserialize(pFile.readAll())
+  pFile.close()
+  
+  convertcc.set_palette(palette, monitorSide)
 end
 
 local hex_table = {
-  ["0"] = 1, ["1"] = 2, ["2"] = 4, ["3"] = 8,
-  ["4"] = 16, ["5"] = 32, ["6"] = 64, ["7"] = 128,
-  ["8"] = 256, ["9"] = 512, ["a"] = 1024, ["b"] = 2048,
-  ["c"] = 4096, ["d"] = 8192, ["e"] = 16384, ["f"] = 32768
+  ["0"] = 1,  ["1"] = 2,    ["2"] = 4,    ["3"] = 8,
+  ["4"] = 16, ["5"] = 32,   ["6"] = 64,   ["7"] = 128,
+  ["8"] = 256,["9"] = 512,  ["a"] = 1024, ["b"] = 2048,
+  ["c"] = 4096,["d"] = 8192,["e"] = 16384,["f"] = 32768
 }
 local crrX = 1
 local crrY = 1
