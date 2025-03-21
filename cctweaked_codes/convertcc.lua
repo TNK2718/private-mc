@@ -185,11 +185,11 @@ local function process_image(path, target_width, target_height, monitorSide)
     get_pixel = function(x, y) return image:get_pixel(x, y) end
   end
   sleep(0)
-  local temp_palette = compute_optimal_palette(image, width, height, get_pixel)
+  local float_palette = compute_optimal_palette(image, width, height, get_pixel)
   sleep(0)
   local palette = set_palette(temp_palette, monitorSide)
   local imageText = convertcc(image, width, height, get_pixel, palette)
-  return imageText, palette
+  return imageText, float_palette
 end
 
 return {
