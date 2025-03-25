@@ -1,5 +1,10 @@
+local backColor = colors.black
+local textColor = colors.green
+local fieldBackColor = colors.gray
+local buttonColor = colors.gray
+
 local basalt = require("basalt")
-local frame = basalt.createFrame()
+local frame = basalt.createFrame():setBackground(backColor):setForeground(textColor)
 
 -- Peripherals
 local chestSide = "back"
@@ -15,19 +20,125 @@ local searchInput = frame:addInput()
     :setX(2)
     :setY(2)
     :setPlaceholder("Search item...")
+    :setBackground(fieldBackColor)
+    :setForeground(textColor)
 
 local searchButton = frame:addButton()
     :setHeight(3)
     :setText("Search")
     :setX(23)
     :setY(1)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
 
+-- Paging buttons
+local prevPageButton = frame:addButton()
+    :setText("<--")
+    :setWidth(6)
+    :setX(38)
+    :setY(29)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+
+local nextPageButton = frame:addButton()
+    :setText("-->")
+    :setWidth(6)
+    :setX(45)
+    :setY(29)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local withdrawButton = frame:addButton()
+    :setText("Withdraw")
+    :setX(52)
+    :setY(29)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local withdrawAllButton = frame:addButton()
+    :setText("Withdraw All")
+    :setWidth(14)
+    :setX(65)
+    :setY(29)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+-- Filters
+local ingotsFilterButton = frame:addButton()
+    :setHeight(1)
+    :setText("Diamond: OFF")
+    :setWidth(16)
+    :setX(2)
+    :setY(5)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local toolsFilterButton = frame:addButton()
+    :setHeight(1)
+    :setText("Tool: OFF")
+    :setWidth(16)
+    :setX(19)
+    :setY(5)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local skillbooksFilterButton = frame:addButton()
+    :setHeight(1)
+    :setText("Skillbook: OFF")
+    :setWidth(16)
+    :setX(36)
+    :setY(5)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local mapsFilterButton = frame:addButton()
+    :setText("Maps: OFF")
+    :setWidth(14)
+    :setX(53)
+    :setY(5)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local statSoulFilterButton = frame:addButton()
+    :setText("StatSoul: OFF")
+    :setWidth(16)
+    :setX(68)
+    :setY(5)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local soulslikeFilterButton = frame:addButton()
+    :setText("Soulslike: OFF")
+    :setWidth(16)
+    :setX(36)
+    :setY(1)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local runesFilterButton = frame:addButton()
+    :setText("Runes: OFF")
+    :setWidth(14)
+    :setX(53)
+    :setY(1)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
+local gemsFilterButton = frame:addButton()
+    :setText("Gems: OFF")
+    :setWidth(16)
+    :setX(68)
+    :setY(1)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+    
 -- Item list
 local itemList = frame:addList()
     :setWidth(35)
-    :setHeight(20)
+    :setHeight(27)
     :setX(2)
-    :setY(8)
+    :setY(7)
+    :setBackground(backColor)
+    :setForeground(textColor)
 
 -- Item detail
 local detailList = frame:addList()
@@ -35,84 +146,13 @@ local detailList = frame:addList()
     :setHeight(20)
     :setX(38)
     :setY(8)
-
--- Paging buttons
-local prevPageButton = frame:addButton()
-    :setText("<--")
-    :setWidth(6)
-    :setX(2)
-    :setY(29)
-
-local nextPageButton = frame:addButton()
-    :setText("-->")
-    :setWidth(6)
-    :setX(9)
-    :setY(29)
-
-local withdrawButton = frame:addButton()
-    :setText("Withdraw")
-    :setX(16)
-    :setY(29)
-
-local withdrawAllButton = frame:addButton()
-    :setText("Withdraw All")
-    :setWidth(14)
-    :setX(35)
-    :setY(29)
-
--- Filters
-local ingotsFilterButton = frame:addButton()
-    :setText("Diamond: OFF")
-    :setWidth(16)
-    :setX(2)
-    :setY(5)
-
-local toolsFilterButton = frame:addButton()
-    :setText("Tool: OFF")
-    :setWidth(16)
-    :setX(19)
-    :setY(5)
-
-local skillbooksFilterButton = frame:addButton()
-    :setText("Skillbook: OFF")
-    :setWidth(16)
-    :setX(36)
-    :setY(5)
-
-local mapsFilterButton = frame:addButton()
-    :setText("Maps: OFF")
-    :setWidth(14)
-    :setX(53)
-    :setY(5)
-
-local statSoulFilterButton = frame:addButton()
-    :setText("StatSoul: OFF")
-    :setWidth(16)
-    :setX(68)
-    :setY(5)
-
-local soulslikeFilterButton = frame:addButton()
-    :setText("Soulslike: OFF")
-    :setWidth(16)
-    :setX(36)
-    :setY(1)
-
-local runesFilterButton = frame:addButton()
-    :setText("Runes: OFF")
-    :setWidth(14)
-    :setX(53)
-    :setY(1)
-
-local gemsFilterButton = frame:addButton()
-    :setText("Gems: OFF")
-    :setWidth(16)
-    :setX(68)
-    :setY(1)
+    :setBackground(backColor)
+    :setForeground(textColor)
 
 -- Paging state
 local allItems = {}
 local currentPage = 1
-local itemsPerPage = 20
+local itemsPerPage = 27
 
 local function returnWithdrawnItems()
     local targetInv = peripheral.wrap(targetSide)
@@ -131,12 +171,15 @@ local function getItemDetail(item, slot)
     if not item then
         return {"No details available"}
     end
+    local detailData = chest.getItemDetail(slot)
     local details = {
         "Slot: " .. slot,
-        "Name: " .. item.name,
+        "Name: " .. detailData.displayName,
         "Count: " .. item.count,
     }
-    local detailData = chest.getItemDetail(slot)
+    if detailData and detailData.nbt then
+        table.insert(details, "NBT: " .. detailData.nbt)
+    end
     if detailData and detailData.tags then
         for key, value in pairs(detailData.tags) do
             if value then
