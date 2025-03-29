@@ -157,6 +157,13 @@ local withdrawAllButton = frame:addButton()
     :setY(29)
     :setBackground(buttonColor)
     :setForeground(textColor)
+
+local depositButton = frame:addButton()
+    :setText("Deposit")
+    :setX(68)
+    :setY(25)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
     
 -- Filters
 local ingotsFilterButton = frame:addButton()
@@ -388,13 +395,13 @@ end)
 
 -- onClick Events
 searchButton:onClick(function()
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 clearButton:onClick(function()
     searchInput:setText("")
     nbtSearchInput:setText("")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 prevPageButton:onClick(function()
@@ -447,54 +454,60 @@ withdrawAllButton:onClick(function()
     detailList:clear()
 end)
 
+depositButton:onClick(function()
+    updateItemList(false) -- Return process
+end)
+
 ingotsFilterButton:onClick(function()
     searchInput:setText("")
     nbtSearchInput:setText("material")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 toolsFilterButton:onClick(function()
     searchInput:setText("")
     nbtSearchInput:setText("tool")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 skillbooksFilterButton:onClick(function()
     searchInput:setText("skillbook")
     nbtSearchInput:setText("")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 mapsFilterButton:onClick(function()
     searchInput:setText("dungeon_map")
     nbtSearchInput:setText("")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 statSoulFilterButton:onClick(function()
     searchInput:setText("stat_soul")
     nbtSearchInput:setText("")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 soulslikeFilterButton:onClick(function()
     searchInput:setText("slu:")
     nbtSearchInput:setText("")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
 runesFilterButton:onClick(function()
     searchInput:setText("mmorpg:runes")
     nbtSearchInput:setText("")
-    updateItemList()
+    updateItemList(true) -- Skip return process)
 end)
 
 gemsFilterButton:onClick(function()
     searchInput:setText("mmorpg:gems")
     nbtSearchInput:setText("")
-    updateItemList()
+    updateItemList(true) -- Skip return process
 end)
 
+returnWithdrawnItems()
+-- Start the UI
 basalt.run()
 -- Close rednet when exiting
 rednet.close("back")
