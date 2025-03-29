@@ -6,8 +6,8 @@ local portUnit = "port"
 rednet.open("back")
 local serverID = rednet.lookup("stockpile")
 if not serverID then
-  print("Stockpile server not found.")
-  return
+    print("Stockpile server not found.")
+    return
 end
 
 -- Get port inventories
@@ -21,73 +21,65 @@ local adjacentsNames = {
 }
 local port_invs = {}
 for _, p in ipairs(peripheral.getNames()) do
-  if peripheral.hasType(p, "inventory") then
-    -- Don't count adjacent inventories as storage
-    local isAdjacent = false
-    for _, name in ipairs(adjacentsNames) do
-      if p == name then
-        isAdjacent = true
-        break
-      end
-    end
+    if peripheral.hasType(p, "inventory") then
+        -- Don't count adjacent inventories as storage
+        local isAdjacent = false
+        for _, name in ipairs(adjacentsNames) do
+            if p == name then
+                isAdjacent = true
+                break
+            end
+        end
 
-    if not isAdjacent and p:find("minecraft:chest") then
-        table.insert(port_invs, p)
+        if not isAdjacent and p:find("minecraft:chest") then
+            table.insert(port_invs, p)
+        end
     end
-  end
+end
+
+function sendCommand(command)
+    print("Sending command: " .. command)
+    rednet.send(serverID, command, "stockpile")
+    local senderID, message, protocol = rednet.receive("stockpile", 5)
+    if message then
+        print("Got response:")
+        if type(message) == "table" then
+            print(textutils.serialize(message))
+        else
+            print(message)
+        end
+    else
+        print("No response.")
+    end
+    return message
 end
 
 -- portUnit init
 local command_set = "unit.set('" .. portUnit .. "', " .. textutils.serialize(port_invs) .. ")"
-rednet.send(serverID, command_set, "stockpile")
-print("Sending command: " .. command_set)
-
-local senderID, message, protocol = rednet.receive("stockpile", 5)
-if message then
-  print("Got response:")
-  if type(message) == "table" then
-    print(textutils.serialize(message))
-  else
-    print(message)
-  end
-else
-  print("No response.")
-end
+sendCommand(command_set)
 
 local command_is_io = "unit.is_io('" .. portUnit .. "', true)"
-rednet.send(serverID, command_is_io, "stockpile")
-print("Sending command: " .. command_is_io)
-
-local senderID, message, protocol = rednet.receive("stockpile", 5)
-if message then
-  print("Got response:")
-  if type(message) == "table" then
-    print(textutils.serialize(message))
-  else
-    print(message)
-  end
-else
-  print("No response.")
-end
+sendCommand(command_is_io)
 
 -- Get unit data
 local command_get = "unit.get()"
 rednet.send(serverID, command_get, "stockpile")
 local senderID, unitData, protocol = rednet.receive("stockpile", 5)
 if not unitData then
-  print("unit.get() no response.")
-  rednet.close("back")
-  return
+    print("unit.get() no response.")
+    rednet.close("back")
+    return
 end
 if type(unitData) ~= "table" then
-  unitData = textutils.unserialize(unitData)
+    unitData = textutils.unserialize(unitData)
 end
 
 local storage_invs = unitData[1][storageUnit]
 if not storage_invs or type(storage_invs) ~= "table" then
-  print("'" .. storageUnit .. "' does not exist in the unit data.")
-  rednet.close("back")
-  return
+    print("'" .. storageUnit .. "' does not exist in the unit data.")
+    print(textutils.serialize(unitData))
+    rednet.close("back")
+    return
 end
 
 -- Basalt init
@@ -122,6 +114,14 @@ local searchButton = frame:addButton()
     :setHeight(3)
     :setText("Search")
     :setX(44)
+    :setY(1)
+    :setBackground(buttonColor)
+    :setForeground(textColor)
+
+local clearButton = frame:addButton()
+    :setHeight(3)
+    :setText("Clear")
+    :setX(56)
     :setY(1)
     :setBackground(buttonColor)
     :setForeground(textColor)
@@ -388,6 +388,12 @@ end)
 
 -- onClick Events
 searchButton:onClick(function()
+    updateItemList()
+end)
+
+clearButton:onClick(function()
+    searchInput:setText("")
+    nbtSearchInput:setText("")
     updateItemList()
 end)
 

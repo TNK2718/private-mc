@@ -35,6 +35,24 @@ for _, p in ipairs(peripheral.getNames()) do
   end
 end
 
+-- Reset units
+local command = "unit.set('all', nil)"
+rednet.send(serverID, command, "stockpile")
+print("Sending command: " .. command)
+
+-- Get response
+local senderID, message, protocol = rednet.receive("stockpile", 10)
+if message then
+  print("Got response:")
+  if type(message) == "table" then
+    print(textutils.serialize(message))
+  else
+    print(message)
+  end
+else
+  print("No response.")
+end
+
 -- Send unit.set command
 local command = "unit.set('all', " .. textutils.serialize(invs) .. ")"
 rednet.send(serverID, command, "stockpile")
