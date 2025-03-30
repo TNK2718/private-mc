@@ -290,7 +290,8 @@ function moveItem(itemName, from_invs, to_invs, qty, nbt_regex_filter)
         io.output("latest_log.txt"):write(textutils.serialize(moveResponse)):close()
     else
         print("No response.")
-  end
+    end
+    scan(storage_invs)
 end
 
 function getContent()
@@ -345,7 +346,6 @@ local function updateItemList(skipReturn)
     if not skipReturn then
         returnWithdrawnItems()
     end
-    scan(storage_invs)
 
     allItems = {}
     local contents = getContent()["item_index"]
@@ -362,6 +362,11 @@ local function updateItemList(skipReturn)
         content["itemNum"] = itemNum
         table.insert(allItems, content)
     end
+
+    -- Sort items by itemName
+    table.sort(allItems, function(a, b)
+        return a["itemName"] < b["itemName"]
+    end)
 
     currentPage = 1
     updatePage()
