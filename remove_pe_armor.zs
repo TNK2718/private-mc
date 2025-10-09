@@ -1,24 +1,25 @@
-// remove_pe_armor.zs
-val ids = [
-  // Dark Matter
-  "projecte:dm_helmet",
-  "projecte:dm_chestplate",
-  "projecte:dm_leggings",
-  "projecte:dm_boots",
-  // Red Matter
-  "projecte:rm_helmet",
-  "projecte:rm_chestplate",
-  "projecte:rm_leggings",
-  "projecte:rm_boots",
-  // Gem
-  "projecte:gem_helmet",
-  "projecte:gem_chestplate",
-  "projecte:gem_leggings",
-  "projecte:gem_boots"
+// CraftTweaker 1.20.1 (v14.x) 
+import crafttweaker.api.item.IItemStack;
+
+val targets as IItemStack[] = [
+    // Dark Matter
+    <item:projecte:dm_helmet>,
+    <item:projecte:dm_chestplate>,
+    <item:projecte:dm_leggings>,
+    <item:projecte:dm_boots>,
+    // Red Matter
+    <item:projecte:rm_helmet>,
+    <item:projecte:rm_chestplate>,
+    <item:projecte:rm_leggings>,
+    <item:projecte:rm_boots>,
+    // Gem
+    <item:projecte:gem_helmet>,
+    <item:projecte:gem_chestplate>,
+    <item:projecte:gem_leggings>,
+    <item:projecte:gem_boots>
 ];
 
-for id in ids {
-  try {
-    recipes.remove(<${id}>);
-  } catch (any) {}
+for target in targets {
+    craftingTable.removeRecipeByOutput(target);
+    recipes.removeByOutput(target);
 }
