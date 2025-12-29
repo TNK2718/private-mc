@@ -42,4 +42,6 @@ services:
     volumes:
       - ./1.20.1:/data
       - /etc/timezone:/etc/timezone:ro
+    tmpfs:
+      - /tmp:exec,mode=1777
     restart: unless-stopped
