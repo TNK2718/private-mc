@@ -1,24 +1,22 @@
 services:
-
-  # =================================================== #
-  #  Forge Server                                      #
-  # =================================================== #
   forge:
-    container_name: mc_forge
     image: itzg/minecraft-server:java17
+    container_name: mc_forge
     tty: true
     stdin_open: true
     environment:
       ENABLE_ROLLING_LOGS: "TRUE"
-      MEMORY: "5500M"
-      JVM_OPTS: "-XX:MaxRAMPercentage=75"
+
+      MEMORY: "5000M"
+      JVM_OPTS: "-Djava.io.tmpdir=/data/tmp"
+
       TYPE: "FORGE"
       EULA: "TRUE"
-      VERSION: "1.20.1" # a default is "LATEST"
+      VERSION: "1.20.1"
       FORGEVERSION: "47.4.4"
       MOTD: "The World of Forge Server"
       MAX_PLAYERS: 5
-      MAX_WORLD_SIZE: 5000
+      MAX_WORLD_SIZE: 10000
       ENABLE_COMMAND_BLOCK: "TRUE"
       SNOOPER_ENABLED: "FALSE"
       VIEW_DISTANCE: 8
@@ -26,15 +24,14 @@ services:
       SYNC_CHUNK_WRITES: "FALSE"
       PVP: "TRUE"
       DIFFICULTY: "normal"
-      LEVEL: "world" # a default is "world"
-      #ONLINE_MODE: "TRUE"
+      LEVEL: "world"
       ALLOW_FLIGHT: "TRUE"
       USE_NATIVE_TRANSPORT: "TRUE"
       STOP_SERVER_ANNOUNCE_DELAY: 30
       GUI: "FALSE"
-      WHITELIST: ""
+      ENABLE_WHITELIST: "true"
+      ENFORCE_WHITELIST: "true"
       OPS: ""
-      MODS: |
       SERVER_PORT: "25565"
     ports:
       - "25565:25565/tcp"
@@ -43,5 +40,6 @@ services:
       - ./1.20.1:/data
       - /etc/timezone:/etc/timezone:ro
     tmpfs:
-      - /tmp:exec,mode=1777
+      - /tmp:rw,exec,nosuid,nodev,mode=1777,size=1g
+
     restart: unless-stopped
